@@ -1,0 +1,46 @@
+name: Bot Poll
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # كل 5 دقائق
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: study-bot
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Poll Telegram updates
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          NOTION_TOKEN:   ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID:   ${{ secrets.NOTION_DB_ID }}
+          GEMINI_KEY:     ${{ secrets.GEMINI_KEY }}
+          CHAT_ID:        ${{ secrets.CHAT_ID }}
+        run: python bot_listener.py
+
+      - name: Commit state
+        run: |
+          git config user.name "study-bot"
+          git config user.email "bot@noreply.local"
+          if [ -n "$(git status --porcelain bot_state.json)" ]; then
+            git add bot_state.json
+            git commit -m "update bot state"
+            git push
+          fi

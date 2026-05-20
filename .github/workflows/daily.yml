@@ -1,0 +1,28 @@
+name: Daily Reminder
+
+on:
+  schedule:
+    - cron: '0 18 * * *'   # 18:00 UTC = 21:00 الرياض
+  workflow_dispatch:
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Send daily reminder
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          NOTION_TOKEN:   ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_ID:   ${{ secrets.NOTION_DB_ID }}
+          CHAT_ID:        ${{ secrets.CHAT_ID }}
+        run: python daily_reminder.py
